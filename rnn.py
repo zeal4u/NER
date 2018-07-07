@@ -1,11 +1,24 @@
 # -*- coding: utf-8 -*
+import tensorflow as tf
+import numpy as np
 from tensorflow.contrib.rnn import DropoutWrapper
-from utils import *
+
+from utils import get_class_size, file_content_iterator, write_result_to_file, get_src_vocab_size, create_vocab_tables, \
+    load_word2vec_embedding, get_iterator, get_predict_iterator, tag_to_id_table
+
+import config
 
 
 BATCH_SIZE = config.FLAGS.batch_size
-unit_num = embeddings_size         # 默认词向量的大小等于RNN(每个time step) 和 CNN(列) 中神经单元的个数, 为了避免混淆model中全部用unit_num表示。
-time_step = max_sequence      # 每个句子的最大长度和time_step一样,为了避免混淆model中全部用time_step表示。
+# 默认词向量的大小等于RNN(每个time step) 和 CNN(列) 中神经单元的个数, 为了避免混淆model中全部用unit_num表示。
+unit_num = config.FLAGS.embeddings_size
+# 每个句子的最大长度和time_step一样,为了避免混淆model中全部用time_step表示。
+time_step = config.FLAGS.max_sequence
+model_path = config.FLAGS.model_path
+pred_file = config.FLAGS.pred_file
+src_vocab_file = config.FLAGS.src_vocab_file
+tgt_vocab_file = config.FLAGS.tgt_vocab_file
+
 DROPOUT_RATE = config.FLAGS.dropout
 EPOCH = config.FLAGS.epoch
 TAGS_NUM = get_class_size()
@@ -13,12 +26,12 @@ TAGS_NUM = get_class_size()
 
 class NER_net:
     def __init__(self, scope_name, iterator, embedding, batch_size):
-        '''
+        """
         :param scope_name:
         :param iterator: 调用tensorflow DataSet API把数据feed进来。
-        :param embedding: 提前训练好的word embedding
+        :param embedding: 提前训练好的word embedding(word2vec)
         :param batch_size:
-        '''
+        """
         self.batch_size = batch_size
         self.embedding = embedding
         self.iterator = iterator
@@ -39,6 +52,7 @@ class NER_net:
         # y: [batch_size, time_step]
         self.y = tgt
 
+        # graph construction
         cell_forward = tf.contrib.rnn.BasicLSTMCell(unit_num)
         cell_backward = tf.contrib.rnn.BasicLSTMCell(unit_num)
         if DROPOUT_RATE is not None:
@@ -75,25 +89,26 @@ def train(net, iterator, sess):
     ckpt = tf.train.get_checkpoint_state(model_path)
     if ckpt is not None:
         path = ckpt.model_checkpoint_path
-        print 'loading pre-trained model from %s.....' % path
+        print('loading pre-trained model from %s.....' % path)
         saver.restore(sess, path)
 
     current_epoch = sess.run(net.global_step)
     while True:
-        if current_epoch > EPOCH: break
+        if current_epoch > EPOCH:
+            break
         try:
             tf_unary_scores, tf_transition_params, _, losses = sess.run(
                 [net.outputs, net.transition_params, net.train_op, net.loss])
 
             if current_epoch % 100 == 0:
-                print '*' * 100
-                print current_epoch, 'loss', losses
-                print '*' * 100
+                print('*' * 100)
+                print(current_epoch, 'loss', losses)
+                print('*' * 100)
 
             # 每隔10%的进度则save一次。
             if current_epoch % (EPOCH / 10) == 0 and current_epoch != 0:
                 sess.run(tf.assign(net.global_step, current_epoch))
-                saver.save(sess, model_path+'points', global_step=current_epoch)
+                saver.save(sess, model_path + 'points', global_step=current_epoch)
 
             current_epoch += 1
 
@@ -103,7 +118,7 @@ def train(net, iterator, sess):
             # iterator.next() cannot get enough data to a batch, initialize it.
             # 正常初始化流程
             sess.run(iterator.initializer)
-    print 'training finished!'
+    print('training finished!')
 
 
 def predict(net, tag_table, sess):
@@ -111,10 +126,10 @@ def predict(net, tag_table, sess):
     ckpt = tf.train.get_checkpoint_state(model_path)
     if ckpt is not None:
         path = ckpt.model_checkpoint_path
-        print 'loading pre-trained model from %s.....' % path
+        print('loading pre-trained model from %s.....' % path)
         saver.restore(sess, path)
     else:
-        print 'Model not found, please train your model first'
+        print('Model not found, please train your model first')
         return
 
     # 获取原文本的iterator
@@ -126,7 +141,7 @@ def predict(net, tag_table, sess):
             tf_unary_scores, tf_transition_params = sess.run(
                 [net.outputs, net.transition_params])
         except tf.errors.OutOfRangeError:
-            print 'Prediction finished!'
+            print('Prediction finished!')
             break
 
         # 把batch那个维度去掉
@@ -159,7 +174,7 @@ if __name__ == '__main__':
         DROPOUT_RATE = 1.0
         iterator = get_predict_iterator(src_vocab_table, vocab_size, BATCH_SIZE)
     else:
-        print 'Only support train and predict actions.'
+        print('Only support train and predict actions.')
         exit(0)
 
     tag_table = tag_to_id_table()
@@ -172,5 +187,4 @@ if __name__ == '__main__':
         if action == 'train':
             train(net, iterator, sess)
         elif action == 'predict':
-
             predict(net, tag_table, sess)
