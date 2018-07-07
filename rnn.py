@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*
+import argparse
+
 import tensorflow as tf
 import numpy as np
 from tensorflow.contrib.rnn import DropoutWrapper
@@ -156,8 +158,21 @@ def predict(net, tag_table, sess):
 
 
 if __name__ == '__main__':
+    # 注册脚本参数读取器
+    parser = argparse.ArgumentParser(description="Named entry recognition")
+
+    parser.add_argument("--modelpath", default=config.FLAGS.model_path, type=str, help="Dir of saving models.")
+    parser.add_argument("--action", default=config.FLAGS.action, type=str, help="Action of running script: train or "
+                                                                                "predict.")
+    parser.add_argument("--data", default=config.FLAGS.pred_file, type=str, help="predict data path")
+
+    args = parser.parse_args()
+    config.FLAGS.model_path = args.modelpath
+    config.FLAGS.action = args.action
+    config.FLAGS.pred_file = args.data
 
     action = config.FLAGS.action
+
     # 获取词的总数。
     vocab_size = get_src_vocab_size()
     src_unknown_id = tgt_unknown_id = vocab_size
