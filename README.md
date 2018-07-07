@@ -6,7 +6,7 @@
 
 该程序使用Tensorflow完成，使用了当前较新的DataSet API，使数据预处理和feed更优雅。
 
-由于使用了新的API， Tensorflow版本必须大于1.2.0，代码升级后使用的是TensorFlow1.4，不确定原来Tensorflow1.2是否还兼容。
+由于使用了新的API， Tensorflow版本必须大于1.8.0，代码升级后使用的是TensorFlow1.8
 
 如何使用？
 
