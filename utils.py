@@ -228,8 +228,8 @@ def get_predict_iterator(src_vocab_table, vocab_size, batch_size, max_len=max_se
     (src_ids, src_seq_len) = batched_iter.get_next()
 
     # 这里target_input在预测的时候不需要，但是不能返回None否则报错。这里则用个placeholder代替，但是仍然不会用到。
-    WAHTEVER = 10
-    fake_tag = tf.placeholder(tf.int32, [None, WAHTEVER])
+    WAHTEVER = TAG_PADDING_ID
+    fake_tag = tf.placeholder(tf.int32, [None, None])
     return BatchedInput(
         initializer=batched_iter.initializer,
         source=src_ids,
