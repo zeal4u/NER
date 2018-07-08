@@ -286,6 +286,8 @@ def file_content_iterator(file_name):
 def write_result_to_file(iterator, tags):
     raw_content = next(iterator)
     words = raw_content.split()
+    print(words)
+    print(tags)
     assert len(words) == len(tags)
     for w, t in zip(words, tags):
         print(w, '(' + t + ')', end=' ')
