@@ -288,11 +288,11 @@ def write_result_to_file(iterator, tags):
     words = raw_content.split()
     print(words)
     print(tags)
-    assert len(words) == len(tags)
-    for w, t in zip(words, tags):
-        print(w, '(' + t + ')', end=' ')
-    print()
-    print('*' * 100)
+    #assert len(words) == len(tags)
+    #for w, t in zip(words, tags):
+    #    print(w, '(' + t + ')', end=' ')
+    #print()
+    print('*' * 10)
 
 
 build_word_index()
